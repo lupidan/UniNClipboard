@@ -1,7 +1,6 @@
 ﻿
 using System;
 using System.Globalization;
-using UniN.Clipboard;
 using UnityEngine;
 
 public class TestScript : MonoBehaviour
