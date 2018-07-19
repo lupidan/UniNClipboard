@@ -4,7 +4,10 @@ namespace UniN.Clipboard
 {
 	public class IOSClipboard : IClipboard
 	{
-		public bool ClipboardAvailable { get; private set; }
+		public bool ClipboardAvailable
+		{
+			get { return true; }
+		}
 
 		public string Text
 		{
