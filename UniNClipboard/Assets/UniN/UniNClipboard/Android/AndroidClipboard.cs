@@ -85,7 +85,7 @@ namespace UniN.UniNClipboard
         {
             var clipDataClass = new AndroidJavaClass(ClassNames.ClipData);
             var clipDataInstance = clipDataClass.CallStatic<AndroidJavaObject>(MethodNames.SNewPlainText, this._label, text);
-            this._clipboardManager.Call(MethodNames.SetPrimaryClip, clipDataInstance);
+            this.ClipboardManager.Call(MethodNames.SetPrimaryClip, clipDataInstance);
         }
 
         private string GetText()
