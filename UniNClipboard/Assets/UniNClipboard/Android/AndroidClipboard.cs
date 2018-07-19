@@ -63,7 +63,7 @@ namespace UniN.Clipboard
             }
         }
 
-
+        private readonly string _label;
 
         public bool ClipboardAvailable
         {
@@ -76,11 +76,15 @@ namespace UniN.Clipboard
             set { this.SetText(value); }
         }
 
+        public AndroidClipboard(string label)
+        {
+            this._label = label;
+        }
+
         private void SetText(string text)
         {
-            var label = "Test label";
             var clipDataClass = new AndroidJavaClass(ClassNames.ClipData);
-            var clipDataInstance = clipDataClass.CallStatic<AndroidJavaObject>(MethodNames.SNewPlainText, label, text);
+            var clipDataInstance = clipDataClass.CallStatic<AndroidJavaObject>(MethodNames.SNewPlainText, this._label, text);
             this._clipboardManager.Call(MethodNames.SetPrimaryClip, clipDataInstance);
         }
 
