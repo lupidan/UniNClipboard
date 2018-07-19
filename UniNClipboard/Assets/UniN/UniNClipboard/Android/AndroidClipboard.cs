@@ -1,7 +1,7 @@
 ﻿using System;
 using UnityEngine;
 
-namespace UniN.Clipboard
+namespace UniN.UniNClipboard.Android
 {
     public class AndroidClipboard : IClipboard
     {

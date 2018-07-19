@@ -1,6 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 
-namespace UniN.Clipboard
+namespace UniN.UniNClipboard.IOS
 {
 	public class IOSClipboard : IClipboard
 	{

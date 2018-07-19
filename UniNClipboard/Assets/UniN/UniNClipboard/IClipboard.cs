@@ -1,5 +1,5 @@
 ﻿
-namespace UniN.Clipboard
+namespace UniN.UniNClipboard
 {
 	public interface IClipboard
 	{

@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-namespace UniN.Clipboard
+namespace UniN.UniNClipboard.EditorTools
 {
 	public class EditorClipboard : MonoBehaviour, IClipboard
 	{
