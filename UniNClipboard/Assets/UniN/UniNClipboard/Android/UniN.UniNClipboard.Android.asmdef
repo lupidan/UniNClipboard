@@ -1,0 +1,12 @@
+{
+    "name": "UniN.UniNClipboard.Android",
+    "references": [
+        "UniN.UniNClipboard"
+    ],
+    "optionalUnityReferences": [],
+    "includePlatforms": [
+        "Android"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false
+}

@@ -1,0 +1,12 @@
+{
+    "name": "UniN.UniNClipboard.EditorTools",
+    "references": [
+        "UniN.UniNClipboard"
+    ],
+    "optionalUnityReferences": [],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false
+}

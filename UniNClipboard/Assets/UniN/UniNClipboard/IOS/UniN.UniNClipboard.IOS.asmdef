@@ -1,0 +1,12 @@
+{
+    "name": "UniN.UniNClipboard.IOS",
+    "references": [
+        "UniN.UniNClipboard"
+    ],
+    "optionalUnityReferences": [],
+    "includePlatforms": [
+        "iOS"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false
+}
