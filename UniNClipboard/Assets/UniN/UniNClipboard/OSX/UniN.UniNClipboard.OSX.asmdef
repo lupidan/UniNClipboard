@@ -1,0 +1,12 @@
+{
+    "name": "UniN.UniNClipboard.OSX",
+    "references": [
+        "UniN.UniNClipboard"
+    ],
+    "optionalUnityReferences": [],
+    "includePlatforms": [
+        "macOSStandalone"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false
+}
