@@ -25,6 +25,8 @@ public class Clipboard
                 _shared = new IOSClipboard();
                 #elif UNITY_ANDROID
                 _shared = new AndroidClipboard("UniNClipboard");
+                #elif UNITY_STANDALONE_OSX
+                _shared = new OSXClipboard();
                 #endif
             }
 
