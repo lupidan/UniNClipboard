@@ -1,5 +1,6 @@
 # UniNClipboard
 UniNClipboard is a minimalistic plugin for Unity 3D that abstracts the implementation of a basic Clipboard/Pasteboard for each platform. It allows to check the contents of the Clipboard, write content into it and, in some platforms, observe changes on it.
+
 | Platform     | Strings            | Observe changes     |
 |----------    |----------------    |-----------------    |
 | Android      | Read and write     | TODO                |
