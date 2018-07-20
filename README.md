@@ -35,7 +35,7 @@ TODO/Ideas:
 - [x] Android Basic implementation (Only strings)
 - [ ] UnityPackage generation
 - [ ] Compatibility for older Unity Versions (no assemblies)
-- [x ] OSX Basic implementation (Only strings)
+- [x] OSX Basic implementation (Only strings)
 - [ ] Windows Basic implementation (Only strings)
 - [ ] Linux Basic implementation (Only strings)
 - [ ] Add other types for iOS (Data? URL? HTML?)...
