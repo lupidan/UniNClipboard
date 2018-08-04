@@ -4,53 +4,55 @@ using AOT;
 
 namespace UniN.UniNClipboard
 {
-	public class IOSClipboard : IClipboard
-	{
-		private static IOSClipboard sharedClipboard;
+    public class IOSClipboard : IClipboard
+    {
+        public bool ClipboardAvailable
+        {
+            get { return true; }
+        }
 
-		public bool ClipboardAvailable
-		{
-			get { return true; }
-		}
+        public string Text
+        {
+            get { return IOSUniNClipboardGetText(); }
+            set { IOSUniNClipboardSetText(value); }
+        }
 
-		public string Text
-		{
-			get { return IOSUniNClipboardGetText(); }
-			set { IOSUniNClipboardSetText(value); }
-		}
+        public event Action OnClipboardChanged
+        {
+            add
+            {
+                if (onNativeClipboardChanged == null)
+                    IOSUniNClipboardSetChangedCallback(UniNClipboardHelperChangedCallback);
 
-		private event Action onClipboardChanged;
-		public event Action OnClipboardChanged
-		{
-			add
-			{
-				onClipboardChanged += value;
-				sharedClipboard = this;
-				IOSUniNClipboardSetChangedCallback(UniNClipboardHelperChangedCallback);
-			}
-			remove
-			{
-				onClipboardChanged -= value;
-			}
-		}
+                onNativeClipboardChanged += value;
+            }
+            remove
+            {
+                onNativeClipboardChanged -= value;
 
-		[DllImport("__Internal")]
-		private static extern string IOSUniNClipboardGetText();
+                if (onNativeClipboardChanged == null)
+                    IOSUniNClipboardSetChangedCallback(null);
+            }
+        }
 
-		[DllImport("__Internal")]
-		private static extern void IOSUniNClipboardSetText(string text);
+        [DllImport("__Internal")]
+        private static extern string IOSUniNClipboardGetText();
 
-		[DllImport("__Internal")]
-		private static extern void IOSUniNClipboardSetChangedCallback(UniNClipboardHelperChangedDelegate changedCallback);
+        [DllImport("__Internal")]
+        private static extern void IOSUniNClipboardSetText(string text);
 
+        [DllImport("__Internal")]
+        private static extern void IOSUniNClipboardSetChangedCallback(UniNClipboardHelperChangedDelegate changedCallback);
 
-		private delegate void UniNClipboardHelperChangedDelegate();
+        private static event Action onNativeClipboardChanged;
 
-		[MonoPInvokeCallback(typeof(UniNClipboardHelperChangedDelegate))]
-		private static void UniNClipboardHelperChangedCallback()
-		{
-			sharedClipboard.onClipboardChanged.Invoke();
-		}
-	}
+        private delegate void UniNClipboardHelperChangedDelegate();
+
+        [MonoPInvokeCallback(typeof(UniNClipboardHelperChangedDelegate))]
+        private static void UniNClipboardHelperChangedCallback()
+        {
+            if (onNativeClipboardChanged != null)
+                onNativeClipboardChanged.Invoke();
+        }
+    }
 }
-
