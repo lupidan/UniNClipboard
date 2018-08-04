@@ -35,7 +35,25 @@ namespace UniN.UniNClipboard
             public const string GetItemCount = "getItemCount";
             public const string GetItemAt = "getItemAt";
             public const string CoerceToText = "coerceToText";
+            public const string AddPrimaryClipChangedListener = "addPrimaryClipChangedListener";
+            public const string RemovePrimaryClipChangedListener = "removePrimaryClipChangedListener";
             public const string SNewPlainText = "newPlainText";
+        }
+
+        class OnPrimaryClipChangedListener : AndroidJavaProxy
+        {
+            public Action OnClipboardChanged;
+
+            //Android API Level 11
+            public OnPrimaryClipChangedListener() : base("android.content.ClipboardManager$OnPrimaryClipChangedListener")
+            {
+            }
+
+            void onPrimaryClipChanged()
+            {
+                if (this.OnClipboardChanged != null)
+                    this.OnClipboardChanged.Invoke();
+            }
         }
 
         private AndroidJavaObject _currentActivity;
@@ -64,6 +82,7 @@ namespace UniN.UniNClipboard
         }
 
         private readonly string _label;
+        private OnPrimaryClipChangedListener _nativeListener;
 
         public bool ClipboardAvailable
         {
@@ -76,7 +95,23 @@ namespace UniN.UniNClipboard
             set { this.SetText(value); }
         }
 
-        public event Action OnClipboardChanged;
+        public event Action OnClipboardChanged
+        {
+            add
+            {
+                if (this._nativeListener == null)
+                    this.SetupClipboardChangedListener();
+
+                this._nativeListener.OnClipboardChanged += value;
+            }
+            remove
+            {
+                this._nativeListener.OnClipboardChanged -= value;
+
+                if (this._nativeListener.OnClipboardChanged == null)
+                    this.RemoveClipboardChangedListener();
+            }
+        }
 
         public AndroidClipboard(string label)
         {
@@ -105,6 +140,18 @@ namespace UniN.UniNClipboard
                 return null;
 
             return clipDataItemInstance.Call<string>(MethodNames.CoerceToText, this.CurrentActivity);
+        }
+
+        private void SetupClipboardChangedListener()
+        {
+            this._nativeListener = new OnPrimaryClipChangedListener();
+            this.ClipboardManager.Call(MethodNames.AddPrimaryClipChangedListener, this._nativeListener);
+        }
+
+        private void RemoveClipboardChangedListener()
+        {
+            this.ClipboardManager.Call(MethodNames.RemovePrimaryClipChangedListener, this._nativeListener);
+            this._nativeListener = null;
         }
     }
 }
