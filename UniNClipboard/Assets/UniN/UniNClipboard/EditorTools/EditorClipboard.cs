@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 
 namespace UniN.UniNClipboard
 {
@@ -17,6 +18,8 @@ namespace UniN.UniNClipboard
 			get { return this._text; }
 			set { this._text = value; }
 		}
+
+		public event Action OnClipboardChanged;
 	}
 }
 

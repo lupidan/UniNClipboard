@@ -15,6 +15,8 @@ namespace UniN.UniNClipboard
 			set { OSXUniNClipboardSetText(value); }
 		}
 
+		public event Action OnClipboardChanged;
+
 		[DllImport("UniNClipboard")]
 		private static extern string OSXUniNClipboardGetText();
 

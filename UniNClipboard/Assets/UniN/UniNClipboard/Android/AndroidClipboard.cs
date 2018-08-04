@@ -76,6 +76,8 @@ namespace UniN.UniNClipboard
             set { this.SetText(value); }
         }
 
+        public event Action OnClipboardChanged;
+
         public AndroidClipboard(string label)
         {
             this._label = label;
