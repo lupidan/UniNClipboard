@@ -1,6 +1,31 @@
 #import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
 
+typedef void (*UniNClipboardHelperChangedDelegate)();
+
+@interface UniNClipboardHelper : NSObject
+
++ (instancetype) sharedHelper;
+@property (nonatomic, strong) id changedObserver;
+
+@end
+
+@implementation UniNClipboardHelper
+
+static dispatch_once_t onceToken;
+static UniNClipboardHelper *_sharedHelper = nil;
+
++ (instancetype) sharedHelper
+{
+    dispatch_once(&onceToken, ^{
+        _sharedHelper = [[UniNClipboardHelper alloc] init];
+    });
+    
+    return _sharedHelper;
+}
+
+@end
+
 extern "C" {
     
     const char *IOSUniNClipboardGetText()
@@ -21,5 +46,22 @@ extern "C" {
     {
         NSString *textContent = text != NULL ? [NSString stringWithUTF8String:text] : nil;
         [[UIPasteboard generalPasteboard] setString:textContent];
+    }
+    
+    void IOSUniNClipboardSetChangedCallback(UniNClipboardHelperChangedDelegate changedCallback)
+    {
+        [[NSNotificationCenter defaultCenter] removeObserver:[[UniNClipboardHelper sharedHelper] changedObserver]];
+        [[UniNClipboardHelper sharedHelper] setChangedObserver:nil];
+        
+        if (changedCallback != NULL)
+        {
+            id observer = [[NSNotificationCenter defaultCenter] addObserverForName:UIPasteboardChangedNotification
+                                                                            object:nil
+                                                                             queue:[NSOperationQueue mainQueue]
+                                                                        usingBlock:^(NSNotification * _Nonnull note) {
+                                                                            changedCallback();
+                                                                        }];
+            [[UniNClipboardHelper sharedHelper] setChangedObserver:observer];
+        }
     }
 }
