@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Threading;
 using UnityEngine;
 
 namespace UniN.UniNClipboard
@@ -53,7 +55,11 @@ namespace UniN.UniNClipboard
 
             private void onPrimaryClipChanged()
             {
-                this._clipboard.invokeOnLateUpdate = true;
+                this._clipboard.QueueActionForNextUpdate(() =>
+                {
+                    if (this._clipboard._onClipboardChanged != null)
+                        this._clipboard._onClipboardChanged.Invoke();
+                });
             }
         }
 
@@ -84,7 +90,7 @@ namespace UniN.UniNClipboard
 
         private OnPrimaryClipChangedListener _nativeListener;
         private event Action _onClipboardChanged;
-        private bool invokeOnLateUpdate;
+        private readonly List<Action> _updateActionsQueue = new List<Action>();
 
         public bool ClipboardAvailable
         {
@@ -104,12 +110,10 @@ namespace UniN.UniNClipboard
                 if (this._nativeListener == null)
                     this.SetupClipboardChangedListener();
 
-                Debug.Log("!!!!! Adding to action");
                 this._onClipboardChanged += value;
             }
             remove
             {
-                Debug.Log("!!!!! Removing from action");
                 this._onClipboardChanged -= value;
 
                 if (this._onClipboardChanged == null)
@@ -117,14 +121,9 @@ namespace UniN.UniNClipboard
             }
         }
 
-        private void LateUpdate()
+        private void Update()
         {
-            if (!this.invokeOnLateUpdate)
-                return;
-
-            this.invokeOnLateUpdate = false;
-            if (this._onClipboardChanged != null)
-                this._onClipboardChanged.Invoke();
+            UpdateActionQueue();
         }
 
         private void SetText(string text)
@@ -161,6 +160,23 @@ namespace UniN.UniNClipboard
         {
             this.ClipboardManager.Call(MethodNames.RemovePrimaryClipChangedListener, this._nativeListener);
             this._nativeListener = null;
+        }
+
+        private void QueueActionForNextUpdate(Action queueAction)
+        {
+            this._updateActionsQueue.Add(queueAction);
+        }
+
+        private void UpdateActionQueue()
+        {
+            if (this._updateActionsQueue.Count == 0)
+                return;
+
+            for (var i = 0; i < this._updateActionsQueue.Count; i++)
+                if (this._updateActionsQueue[i] != null)
+                    this._updateActionsQueue[i].Invoke();
+
+            this._updateActionsQueue.Clear();
         }
     }
 }
