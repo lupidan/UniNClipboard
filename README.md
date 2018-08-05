@@ -3,9 +3,9 @@ UniNClipboard is a minimalistic plugin for Unity 3D that abstracts the implement
 
 | Platform     | Strings            | Observe changes     |
 |----------    |----------------    |-----------------    |
-| Android      | Read and write     | TODO                |
-| iOS          | Read and write     | When app is active                |
-| OSX          | Read and write     | TODO                |
+| Android      | Read and write     | WIP                |
+| iOS          | Read and write     | WIP                |
+| OSX          | Read and write     | WIP                |
 | Windows   | TODO              | TODO                |
 | Linux     | TODO               | TODO                |
 
