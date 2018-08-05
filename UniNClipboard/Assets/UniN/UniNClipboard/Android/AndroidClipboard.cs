@@ -1,12 +1,130 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Threading;
 using UnityEngine;
 
 namespace UniN.UniNClipboard
 {
     public class AndroidClipboard : MonoBehaviour, IClipboard
     {
+        private readonly List<Action> _updateActionsQueue = new List<Action>();
+
+        private AndroidJavaObject _clipboardManager;
+        private AndroidJavaObject _currentActivity;
+        private OnPrimaryClipChangedListener _nativeListener;
+
+        private AndroidJavaObject CurrentActivity
+        {
+            get
+            {
+                if (_currentActivity == null)
+                {
+                    var unityPlayerClass = new AndroidJavaClass(ClassNames.UnityPlayer);
+                    _currentActivity = unityPlayerClass.GetStatic<AndroidJavaObject>(MethodNames.SCurrentActivity);
+                }
+
+                return _currentActivity;
+            }
+        }
+
+        private AndroidJavaObject ClipboardManager
+        {
+            get
+            {
+                if (_clipboardManager == null)
+                    _clipboardManager = CurrentActivity.Call<AndroidJavaObject>(MethodNames.GetSystemService, StringConstants.ClipboardService);
+                return _clipboardManager;
+            }
+        }
+
+        public bool ClipboardAvailable
+        {
+            get { return true; }
+        }
+
+        public string Text
+        {
+            get { return GetText(); }
+            set { SetText(value); }
+        }
+
+        public event Action OnClipboardChanged
+        {
+            add
+            {
+                if (_nativeListener == null)
+                    SetupClipboardChangedListener();
+
+                _onClipboardChanged += value;
+            }
+            remove
+            {
+                _onClipboardChanged -= value;
+
+                if (_onClipboardChanged == null)
+                    RemoveClipboardChangedListener();
+            }
+        }
+
+        private event Action _onClipboardChanged;
+
+        private void Update()
+        {
+            UpdateActionQueue();
+        }
+
+        private void SetText(string text)
+        {
+            var clipDataClass = new AndroidJavaClass(ClassNames.ClipData);
+            var clipDataInstance = clipDataClass.CallStatic<AndroidJavaObject>(MethodNames.SNewPlainText, "UniNCliboard", text);
+            ClipboardManager.Call(MethodNames.SetPrimaryClip, clipDataInstance);
+        }
+
+        private string GetText()
+        {
+            var clipDataInstance = ClipboardManager.Call<AndroidJavaObject>(MethodNames.GetPrimaryClip);
+            if (clipDataInstance == null)
+                return null;
+
+            var itemCount = clipDataInstance.Call<int>(MethodNames.GetItemCount);
+            if (itemCount == 0)
+                return null;
+
+            var clipDataItemInstance = clipDataInstance.Call<AndroidJavaObject>(MethodNames.GetItemAt, 0);
+            if (clipDataItemInstance == null)
+                return null;
+
+            return clipDataItemInstance.Call<string>(MethodNames.CoerceToText, CurrentActivity);
+        }
+
+        private void SetupClipboardChangedListener()
+        {
+            _nativeListener = new OnPrimaryClipChangedListener(this);
+            ClipboardManager.Call(MethodNames.AddPrimaryClipChangedListener, _nativeListener);
+        }
+
+        private void RemoveClipboardChangedListener()
+        {
+            ClipboardManager.Call(MethodNames.RemovePrimaryClipChangedListener, _nativeListener);
+            _nativeListener = null;
+        }
+
+        private void QueueActionForNextUpdate(Action queueAction)
+        {
+            _updateActionsQueue.Add(queueAction);
+        }
+
+        private void UpdateActionQueue()
+        {
+            if (_updateActionsQueue.Count == 0)
+                return;
+
+            for (var i = 0; i < _updateActionsQueue.Count; i++)
+                if (_updateActionsQueue[i] != null)
+                    _updateActionsQueue[i].Invoke();
+
+            _updateActionsQueue.Clear();
+        }
+
         private static class ClassNames
         {
             // Unity
@@ -50,133 +168,17 @@ namespace UniN.UniNClipboard
             public OnPrimaryClipChangedListener(AndroidClipboard clipboard) :
                 base("android.content.ClipboardManager$OnPrimaryClipChangedListener")
             {
-                this._clipboard = clipboard;
+                _clipboard = clipboard;
             }
 
             private void onPrimaryClipChanged()
             {
-                this._clipboard.QueueActionForNextUpdate(() =>
+                _clipboard.QueueActionForNextUpdate(() =>
                 {
-                    if (this._clipboard._onClipboardChanged != null)
-                        this._clipboard._onClipboardChanged.Invoke();
+                    if (_clipboard._onClipboardChanged != null)
+                        _clipboard._onClipboardChanged.Invoke();
                 });
             }
-        }
-
-        private AndroidJavaObject _currentActivity;
-        private AndroidJavaObject CurrentActivity
-        {
-            get
-            {
-                if (this._currentActivity == null)
-                {
-                    var unityPlayerClass = new AndroidJavaClass(ClassNames.UnityPlayer);
-                    this._currentActivity = unityPlayerClass.GetStatic<AndroidJavaObject>(MethodNames.SCurrentActivity);
-                }
-                return this._currentActivity;
-            }
-        }
-
-        private AndroidJavaObject _clipboardManager;
-        private AndroidJavaObject ClipboardManager
-        {
-            get
-            {
-                if (this._clipboardManager == null)
-                    this._clipboardManager = this.CurrentActivity.Call<AndroidJavaObject>(MethodNames.GetSystemService, StringConstants.ClipboardService);
-                return this._clipboardManager;
-            }
-        }
-
-        private OnPrimaryClipChangedListener _nativeListener;
-        private event Action _onClipboardChanged;
-        private readonly List<Action> _updateActionsQueue = new List<Action>();
-
-        public bool ClipboardAvailable
-        {
-            get { return true; }
-        }
-
-        public string Text
-        {
-            get { return this.GetText(); }
-            set { this.SetText(value); }
-        }
-
-        public event Action OnClipboardChanged
-        {
-            add
-            {
-                if (this._nativeListener == null)
-                    this.SetupClipboardChangedListener();
-
-                this._onClipboardChanged += value;
-            }
-            remove
-            {
-                this._onClipboardChanged -= value;
-
-                if (this._onClipboardChanged == null)
-                    this.RemoveClipboardChangedListener();
-            }
-        }
-
-        private void Update()
-        {
-            UpdateActionQueue();
-        }
-
-        private void SetText(string text)
-        {
-            var clipDataClass = new AndroidJavaClass(ClassNames.ClipData);
-            var clipDataInstance = clipDataClass.CallStatic<AndroidJavaObject>(MethodNames.SNewPlainText, "UniNCliboard", text);
-            this.ClipboardManager.Call(MethodNames.SetPrimaryClip, clipDataInstance);
-        }
-
-        private string GetText()
-        {
-            var clipDataInstance = this.ClipboardManager.Call<AndroidJavaObject>(MethodNames.GetPrimaryClip);
-            if (clipDataInstance == null)
-                return null;
-
-            var itemCount = clipDataInstance.Call<int>(MethodNames.GetItemCount);
-            if (itemCount == 0)
-                return null;
-
-            var clipDataItemInstance = clipDataInstance.Call<AndroidJavaObject>(MethodNames.GetItemAt, 0);
-            if (clipDataItemInstance == null)
-                return null;
-
-            return clipDataItemInstance.Call<string>(MethodNames.CoerceToText, this.CurrentActivity);
-        }
-
-        private void SetupClipboardChangedListener()
-        {
-            this._nativeListener = new OnPrimaryClipChangedListener(this);
-            this.ClipboardManager.Call(MethodNames.AddPrimaryClipChangedListener, this._nativeListener);
-        }
-
-        private void RemoveClipboardChangedListener()
-        {
-            this.ClipboardManager.Call(MethodNames.RemovePrimaryClipChangedListener, this._nativeListener);
-            this._nativeListener = null;
-        }
-
-        private void QueueActionForNextUpdate(Action queueAction)
-        {
-            this._updateActionsQueue.Add(queueAction);
-        }
-
-        private void UpdateActionQueue()
-        {
-            if (this._updateActionsQueue.Count == 0)
-                return;
-
-            for (var i = 0; i < this._updateActionsQueue.Count; i++)
-                if (this._updateActionsQueue[i] != null)
-                    this._updateActionsQueue[i].Invoke();
-
-            this._updateActionsQueue.Clear();
         }
     }
 }
