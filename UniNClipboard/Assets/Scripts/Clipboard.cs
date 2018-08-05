@@ -1,6 +1,4 @@
-﻿#if UNITY_EDITOR
-using UnityEngine;
-#endif
+﻿using UnityEngine;
 
 using UniN.UniNClipboard;
 
@@ -24,7 +22,13 @@ public class Clipboard
                 #elif UNITY_IOS
                 _shared = new IOSClipboard();
                 #elif UNITY_ANDROID
-                _shared = new AndroidClipboard("UniNClipboard");
+                var gameObject = new GameObject
+                {
+                    name = "UniNClipboardAndroid"
+                };
+
+                Object.DontDestroyOnLoad(gameObject);
+                _shared = gameObject.AddComponent<AndroidClipboard>();
                 #elif UNITY_STANDALONE_OSX
                 _shared = new OSXClipboard();
                 #endif

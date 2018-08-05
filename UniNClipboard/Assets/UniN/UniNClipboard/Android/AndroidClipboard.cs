@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace UniN.UniNClipboard
 {
-    public class AndroidClipboard : IClipboard
+    public class AndroidClipboard : MonoBehaviour, IClipboard
     {
         private static class ClassNames
         {
@@ -40,19 +40,20 @@ namespace UniN.UniNClipboard
             public const string SNewPlainText = "newPlainText";
         }
 
-        class OnPrimaryClipChangedListener : AndroidJavaProxy
+        private class OnPrimaryClipChangedListener : AndroidJavaProxy
         {
-            public Action OnClipboardChanged;
+            private readonly AndroidClipboard _clipboard;
 
             //Android API Level 11
-            public OnPrimaryClipChangedListener() : base("android.content.ClipboardManager$OnPrimaryClipChangedListener")
+            public OnPrimaryClipChangedListener(AndroidClipboard clipboard) :
+                base("android.content.ClipboardManager$OnPrimaryClipChangedListener")
             {
+                this._clipboard = clipboard;
             }
 
-            void onPrimaryClipChanged()
+            private void onPrimaryClipChanged()
             {
-                if (this.OnClipboardChanged != null)
-                    this.OnClipboardChanged.Invoke();
+                this._clipboard.invokeOnLateUpdate = true;
             }
         }
 
@@ -81,8 +82,9 @@ namespace UniN.UniNClipboard
             }
         }
 
-        private readonly string _label;
         private OnPrimaryClipChangedListener _nativeListener;
+        private event Action _onClipboardChanged;
+        private bool invokeOnLateUpdate;
 
         public bool ClipboardAvailable
         {
@@ -102,26 +104,33 @@ namespace UniN.UniNClipboard
                 if (this._nativeListener == null)
                     this.SetupClipboardChangedListener();
 
-                this._nativeListener.OnClipboardChanged += value;
+                Debug.Log("!!!!! Adding to action");
+                this._onClipboardChanged += value;
             }
             remove
             {
-                this._nativeListener.OnClipboardChanged -= value;
+                Debug.Log("!!!!! Removing from action");
+                this._onClipboardChanged -= value;
 
-                if (this._nativeListener.OnClipboardChanged == null)
+                if (this._onClipboardChanged == null)
                     this.RemoveClipboardChangedListener();
             }
         }
 
-        public AndroidClipboard(string label)
+        private void LateUpdate()
         {
-            this._label = label;
+            if (!this.invokeOnLateUpdate)
+                return;
+
+            this.invokeOnLateUpdate = false;
+            if (this._onClipboardChanged != null)
+                this._onClipboardChanged.Invoke();
         }
 
         private void SetText(string text)
         {
             var clipDataClass = new AndroidJavaClass(ClassNames.ClipData);
-            var clipDataInstance = clipDataClass.CallStatic<AndroidJavaObject>(MethodNames.SNewPlainText, this._label, text);
+            var clipDataInstance = clipDataClass.CallStatic<AndroidJavaObject>(MethodNames.SNewPlainText, "UniNCliboard", text);
             this.ClipboardManager.Call(MethodNames.SetPrimaryClip, clipDataInstance);
         }
 
@@ -144,7 +153,7 @@ namespace UniN.UniNClipboard
 
         private void SetupClipboardChangedListener()
         {
-            this._nativeListener = new OnPrimaryClipChangedListener();
+            this._nativeListener = new OnPrimaryClipChangedListener(this);
             this.ClipboardManager.Call(MethodNames.AddPrimaryClipChangedListener, this._nativeListener);
         }
 
