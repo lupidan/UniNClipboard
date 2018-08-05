@@ -30,6 +30,8 @@ public class TestMenu : MonoBehaviour
 		{
 			var localListenerId = assignedListenerId;
 			Debug.Log(string.Format("[{0}]Clipboard changed: {1}", localListenerId, Clipboard.SharedClipboard.Text));
+			this._contentLabel.text = string.Format("[{0}]Clipboard changed: {1}", localListenerId,
+				Clipboard.SharedClipboard.Text);
 		};
 		Clipboard.SharedClipboard.OnClipboardChanged += listenerToAdd;
 		this.registeredListeners.Add(listenerToAdd);
