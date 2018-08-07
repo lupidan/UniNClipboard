@@ -1,11 +1,14 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 using AOT;
+using UnityEngine;
 
 namespace UniN.UniNClipboard
 {
-    public class IOSClipboard : IClipboard
+    public class IOSClipboard : MonoBehaviour, IClipboard
     {
+        private bool _clipboardDidChange;
+
         public bool ClipboardAvailable
         {
             get { return true; }
@@ -21,18 +24,47 @@ namespace UniN.UniNClipboard
         {
             add
             {
-                if (onNativeClipboardChanged == null)
-                    IOSUniNClipboardSetChangedCallback(UniNClipboardHelperChangedCallback);
+                if (_onClipboardChanged == null)
+                    SetupNativeCallback();
 
-                onNativeClipboardChanged += value;
+                _onClipboardChanged += value;
             }
             remove
             {
-                onNativeClipboardChanged -= value;
+                _onClipboardChanged -= value;
 
-                if (onNativeClipboardChanged == null)
-                    IOSUniNClipboardSetChangedCallback(null);
+                if (_onClipboardChanged == null)
+                    RemoveNativeCallback();
             }
+        }
+
+        private event Action _onClipboardChanged;
+
+        private void Update()
+        {
+            if (!_clipboardDidChange)
+                return;
+
+            _clipboardDidChange = false;
+            if (_onClipboardChanged != null)
+                _onClipboardChanged.Invoke();
+        }
+
+        private void SetupNativeCallback()
+        {
+            onNativeClipboardChanged += ActivateChangedFlag;
+            IOSUniNClipboardSetChangedCallback(UniNClipboardHelperChangedCallback);
+        }
+
+        private void RemoveNativeCallback()
+        {
+            IOSUniNClipboardSetChangedCallback(null);
+            onNativeClipboardChanged -= ActivateChangedFlag;
+        }
+
+        private void ActivateChangedFlag()
+        {
+            _clipboardDidChange = true;
         }
 
         [DllImport("__Internal")]
@@ -46,13 +78,13 @@ namespace UniN.UniNClipboard
 
         private static event Action onNativeClipboardChanged;
 
-        private delegate void UniNClipboardHelperChangedDelegate();
-
         [MonoPInvokeCallback(typeof(UniNClipboardHelperChangedDelegate))]
         private static void UniNClipboardHelperChangedCallback()
         {
             if (onNativeClipboardChanged != null)
                 onNativeClipboardChanged.Invoke();
         }
+
+        private delegate void UniNClipboardHelperChangedDelegate();
     }
 }
