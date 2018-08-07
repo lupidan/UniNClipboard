@@ -20,7 +20,13 @@ public class Clipboard
                 Object.DontDestroyOnLoad(gameObject);
                 _shared = gameObject.AddComponent<EditorClipboard>();
                 #elif UNITY_IOS
-                _shared = new IOSClipboard();
+                var gameObject = new GameObject
+                {
+                    name = "UniNClipboardIOS"
+                };
+
+                Object.DontDestroyOnLoad(gameObject);
+                _shared = gameObject.AddComponent<IOSClipboard>();
                 #elif UNITY_ANDROID
                 var gameObject = new GameObject
                 {
