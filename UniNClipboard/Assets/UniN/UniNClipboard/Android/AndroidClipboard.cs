@@ -1,13 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace UniN.UniNClipboard
 {
     public class AndroidClipboard : MonoBehaviour, IClipboard
     {
-        private readonly List<Action> _updateActionsQueue = new List<Action>();
-
+        private bool _clipboardDidChange;
         private AndroidJavaObject _clipboardManager;
         private AndroidJavaObject _currentActivity;
         private OnPrimaryClipChangedListener _nativeListener;
@@ -16,13 +14,13 @@ namespace UniN.UniNClipboard
         {
             get
             {
-                if (_currentActivity == null)
-                {
-                    var unityPlayerClass = new AndroidJavaClass(ClassNames.UnityPlayer);
-                    _currentActivity = unityPlayerClass.GetStatic<AndroidJavaObject>(MethodNames.SCurrentActivity);
-                }
+                if (_currentActivity != null)
+                    return _currentActivity;
 
-                return _currentActivity;
+                var unityPlayerClass = new AndroidJavaClass(ClassNames.UnityPlayer);
+                var currentActivity = unityPlayerClass.GetStatic<AndroidJavaObject>(MethodNames.SCurrentActivity);
+                _currentActivity = currentActivity;
+                return currentActivity;
             }
         }
 
@@ -30,9 +28,13 @@ namespace UniN.UniNClipboard
         {
             get
             {
-                if (_clipboardManager == null)
-                    _clipboardManager = CurrentActivity.Call<AndroidJavaObject>(MethodNames.GetSystemService, StringConstants.ClipboardService);
-                return _clipboardManager;
+                if (_clipboardManager != null)
+                    return _clipboardManager;
+
+                var clipboardManager = CurrentActivity.Call<AndroidJavaObject>(MethodNames.GetSystemService,
+                    StringConstants.ClipboardService);
+                _clipboardManager = clipboardManager;
+                return clipboardManager;
             }
         }
 
@@ -69,13 +71,19 @@ namespace UniN.UniNClipboard
 
         private void Update()
         {
-            UpdateActionQueue();
+            if (!_clipboardDidChange)
+                return;
+
+            _clipboardDidChange = false;
+            if (_onClipboardChanged != null)
+                _onClipboardChanged.Invoke();
         }
 
         private void SetText(string text)
         {
             var clipDataClass = new AndroidJavaClass(ClassNames.ClipData);
-            var clipDataInstance = clipDataClass.CallStatic<AndroidJavaObject>(MethodNames.SNewPlainText, "UniNCliboard", text);
+            var clipDataInstance = clipDataClass
+                .CallStatic<AndroidJavaObject>(MethodNames.SNewPlainText, "UniNCliboard", text);
             ClipboardManager.Call(MethodNames.SetPrimaryClip, clipDataInstance);
         }
 
@@ -108,30 +116,12 @@ namespace UniN.UniNClipboard
             _nativeListener = null;
         }
 
-        private void QueueActionForNextUpdate(Action queueAction)
-        {
-            _updateActionsQueue.Add(queueAction);
-        }
-
-        private void UpdateActionQueue()
-        {
-            if (_updateActionsQueue.Count == 0)
-                return;
-
-            for (var i = 0; i < _updateActionsQueue.Count; i++)
-                if (_updateActionsQueue[i] != null)
-                    _updateActionsQueue[i].Invoke();
-
-            _updateActionsQueue.Clear();
-        }
-
         private static class ClassNames
         {
             // Unity
             public const string UnityPlayer = "com.unity3d.player.UnityPlayer";
 
             // API Level 11
-            public const string ClipboardManager = "android.content.ClipboardManager";
             public const string ClipData = "android.content.ClipData";
         }
 
@@ -173,11 +163,7 @@ namespace UniN.UniNClipboard
 
             private void onPrimaryClipChanged()
             {
-                _clipboard.QueueActionForNextUpdate(() =>
-                {
-                    if (_clipboard._onClipboardChanged != null)
-                        _clipboard._onClipboardChanged.Invoke();
-                });
+                _clipboard._clipboardDidChange = true;
             }
         }
     }
