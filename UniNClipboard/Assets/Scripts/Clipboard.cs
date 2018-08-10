@@ -11,32 +11,20 @@ public class Clipboard
         {
             if (_shared == null)
             {
-                #if UNITY_EDITOR
                 var gameObject = new GameObject
                 {
                     name = "UniNClipboard"
                 };
 
                 Object.DontDestroyOnLoad(gameObject);
+                #if UNITY_EDITOR
                 _shared = gameObject.AddComponent<EditorClipboard>();
                 #elif UNITY_IOS
-                var gameObject = new GameObject
-                {
-                    name = "UniNClipboardIOS"
-                };
-
-                Object.DontDestroyOnLoad(gameObject);
                 _shared = gameObject.AddComponent<IOSClipboard>();
                 #elif UNITY_ANDROID
-                var gameObject = new GameObject
-                {
-                    name = "UniNClipboardAndroid"
-                };
-
-                Object.DontDestroyOnLoad(gameObject);
                 _shared = gameObject.AddComponent<AndroidClipboard>();
                 #elif UNITY_STANDALONE_OSX
-                _shared = new OSXClipboard();
+                _shared = gameObject.AddComponent<OSXClipboard>();
                 #endif
             }
 
